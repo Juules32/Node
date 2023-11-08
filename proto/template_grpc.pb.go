@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.24.3
-// source: proto/template.proto
+// source: template.proto
 
-package proto
+package Node
 
 import (
 	context "context"
@@ -177,5 +177,5 @@ var TokenRing_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/template.proto",
+	Metadata: "template.proto",
 }
