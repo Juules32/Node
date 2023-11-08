@@ -1,0 +1,32 @@
+syntax = "proto3";
+option go_package = "github.com/Juules32/Node/proto";
+
+package tokenring;
+
+// The token ring service definition.
+service TokenRing {
+  // Passes the token to the next node
+  rpc PassToken(Token) returns (Ack) {}
+
+  // Requests access to the critical section
+  rpc RequestCriticalSection(Empty) returns (Token) {}
+
+  // Releases the critical section
+  rpc ReleaseCriticalSection(Token) returns (Ack) {}
+}
+
+// The token message.
+message Token {
+  string data = 1;
+  bool hasToken = 2;
+}
+
+// Empty message.
+message Empty {
+  // No fields needed.
+}
+
+// Acknowledgement message.
+message Ack {
+  bool success = 1;
+}
