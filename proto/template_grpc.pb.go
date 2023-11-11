@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.24.3
-// source: template.proto
+// source: proto/template.proto
 
 package Node
 
@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -22,12 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TokenRingClient interface {
-	// Passes the token to the next node
-	PassToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*Ack, error)
-	// Requests access to the critical section
-	RequestCriticalSection(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Token, error)
-	// Releases the critical section
-	ReleaseCriticalSection(ctx context.Context, in *Token, opts ...grpc.CallOption) (*Ack, error)
+	PassToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type tokenRingClient struct {
@@ -38,27 +34,9 @@ func NewTokenRingClient(cc grpc.ClientConnInterface) TokenRingClient {
 	return &tokenRingClient{cc}
 }
 
-func (c *tokenRingClient) PassToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*Ack, error) {
-	out := new(Ack)
+func (c *tokenRingClient) PassToken(ctx context.Context, in *Token, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/tokenring.TokenRing/PassToken", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *tokenRingClient) RequestCriticalSection(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Token, error) {
-	out := new(Token)
-	err := c.cc.Invoke(ctx, "/tokenring.TokenRing/RequestCriticalSection", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *tokenRingClient) ReleaseCriticalSection(ctx context.Context, in *Token, opts ...grpc.CallOption) (*Ack, error) {
-	out := new(Ack)
-	err := c.cc.Invoke(ctx, "/tokenring.TokenRing/ReleaseCriticalSection", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,26 +47,15 @@ func (c *tokenRingClient) ReleaseCriticalSection(ctx context.Context, in *Token,
 // All implementations should embed UnimplementedTokenRingServer
 // for forward compatibility
 type TokenRingServer interface {
-	// Passes the token to the next node
-	PassToken(context.Context, *Token) (*Ack, error)
-	// Requests access to the critical section
-	RequestCriticalSection(context.Context, *Empty) (*Token, error)
-	// Releases the critical section
-	ReleaseCriticalSection(context.Context, *Token) (*Ack, error)
+	PassToken(context.Context, *Token) (*emptypb.Empty, error)
 }
 
 // UnimplementedTokenRingServer should be embedded to have forward compatible implementations.
 type UnimplementedTokenRingServer struct {
 }
 
-func (UnimplementedTokenRingServer) PassToken(context.Context, *Token) (*Ack, error) {
+func (UnimplementedTokenRingServer) PassToken(context.Context, *Token) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PassToken not implemented")
-}
-func (UnimplementedTokenRingServer) RequestCriticalSection(context.Context, *Empty) (*Token, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RequestCriticalSection not implemented")
-}
-func (UnimplementedTokenRingServer) ReleaseCriticalSection(context.Context, *Token) (*Ack, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReleaseCriticalSection not implemented")
 }
 
 // UnsafeTokenRingServer may be embedded to opt out of forward compatibility for this service.
@@ -120,42 +87,6 @@ func _TokenRing_PassToken_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TokenRing_RequestCriticalSection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TokenRingServer).RequestCriticalSection(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/tokenring.TokenRing/RequestCriticalSection",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TokenRingServer).RequestCriticalSection(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TokenRing_ReleaseCriticalSection_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Token)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TokenRingServer).ReleaseCriticalSection(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/tokenring.TokenRing/ReleaseCriticalSection",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TokenRingServer).ReleaseCriticalSection(ctx, req.(*Token))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // TokenRing_ServiceDesc is the grpc.ServiceDesc for TokenRing service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -167,15 +98,7 @@ var TokenRing_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "PassToken",
 			Handler:    _TokenRing_PassToken_Handler,
 		},
-		{
-			MethodName: "RequestCriticalSection",
-			Handler:    _TokenRing_RequestCriticalSection_Handler,
-		},
-		{
-			MethodName: "ReleaseCriticalSection",
-			Handler:    _TokenRing_ReleaseCriticalSection_Handler,
-		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "template.proto",
+	Metadata: "proto/template.proto",
 }

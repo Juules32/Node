@@ -1,6 +1,4 @@
 # How to run program
-In root directory, run:
-go run node.go
+- First, remove the contents of the ports.txt file, and optionally, the contents of the log file.
 
-Then, in a new terminal, swap the port numbers and the value of "hasToken" at line 99, then run:
-go run node.go
+- Then, in the root directory, run ```go run node.go``` in as many new terminals you want!

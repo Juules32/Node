@@ -1,2 +1,3 @@
-- [ ] Automatic creation of port number and next port number by file lookup
-- [ ] Cleaner code
+- [X] Automatic creation of port number and next port number by file lookup
+- [X] Cleaner code
+- [ ] Handle Clients crashing/leaving with timeouts

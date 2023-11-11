@@ -1,102 +1,117 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	pb "github.com/Juules32/Node/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type node struct {
-	pb.UnimplementedTokenRingServer
-	peerAddress    string // Address of the peer node
-	hasToken       bool   // Indicates if this node has the token
-	mu             sync.Mutex
+	portNr         int
+	nextPortNr     int  // Address of the peer node
+	hasToken       bool // Indicates if this node has the token
 	wantsToPerform bool
+	mu             sync.Mutex
 }
 
-func (n *node) PassToken(ctx context.Context, token *pb.Token) (*pb.Ack, error) {
+func (n *node) PassToken(ctx context.Context, token *pb.Token) (*emptypb.Empty, error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
-	// Process the token (critical section) when received.
-	if token.HasToken {
-		log.Printf("Node has received the token: %s", token.Data)
-		// Perform critical section operations here.
-		// ...
+	if n.wantsToPerform {
+		message := "Node with port number " + strconv.Itoa(n.portNr) + " performed action in critical section"
 
-		if n.wantsToPerform {
+		printToLog(message)
 
-			f, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-			if err != nil {
-				log.Fatalf("error opening file: %v", err)
-			}
+		fmt.Println("Data written to file successfully!")
 
-			log.SetOutput(f)
-
-			log.Println("Performed Transaction")
-			f.Close()
-
-			l := log.New(os.Stdout, "[AAA] ", 2)
-			l.Printf("Data written to file successfully!")
-
-			// Now pass the token back to the peer node.
-			n.wantsToPerform = false
-		}
-		n.hasToken = true
-		return &pb.Ack{Success: true}, nil
+		n.wantsToPerform = false
 	}
+	n.hasToken = true
 
-	return &pb.Ack{Success: false}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (n *node) sendMessage(ctx context.Context, selfAddress string, peerAddress string) {
-	for {
-		if n.hasToken {
-			n.mu.Lock()
-			// Perform actions as the client, sending the token to the peer.
-			conn, err := grpc.Dial(n.peerAddress, grpc.WithInsecure(), grpc.WithBlock())
-			if err != nil {
-				log.Fatalf("did not connect: %v", err)
-			}
-			defer conn.Close()
+func (n *node) dialNextInLine(ctx context.Context) {
+	n.mu.Lock()
 
-			c := pb.NewTokenRingClient(conn)
-			_, err = c.PassToken(ctx, &pb.Token{Data: "Your token data here", HasToken: true})
-			if err != nil {
-				log.Fatalf("could not pass token: %v", err)
-			}
+	//Find the peer address
+	ports := readPorts()
 
-			fmt.Println(selfAddress + " passed the token to " + peerAddress)
-
-			// After sending the token, the node should wait for it to come back.
-			n.hasToken = false
-			n.mu.Unlock()
-		}
-
-		// Wait for some time before trying to send the token again.
-		time.Sleep(100 * time.Millisecond)
+	if len(ports) < 2 {
+		fmt.Println("All alone...")
+		n.mu.Unlock()
+		return
 	}
+
+	i := findIndex(ports, n.portNr)
+	if i+1 == len(ports) {
+		n.nextPortNr = ports[0]
+	} else {
+		n.nextPortNr = ports[i+1]
+	}
+
+	// Perform actions as the client, sending the token to the peer.
+	conn, err := grpc.Dial("localhost:"+strconv.Itoa(n.nextPortNr), grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	c := pb.NewTokenRingClient(conn)
+
+	_, err = c.PassToken(ctx, &pb.Token{})
+	if err != nil {
+		log.Fatalf("could not pass token: %v", err)
+	}
+
+	fmt.Println("localhost:" + strconv.Itoa(n.portNr) + " passed the token to localhost:" + strconv.Itoa(n.nextPortNr))
+
+	n.hasToken = false
+	n.mu.Unlock()
+
 }
+
 func main() {
 
-	// Configuration
-	selfAddress := "localhost:50051" // Address of this node
-	peerAddress := "localhost:50052" // Address of the peer node
+	portNr := 50000
+	ports := readPorts()
+
+	f, err := os.OpenFile("ports.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+
+	logger := log.New(f, "", 0)
+
+	hasToken := false
+	if len(ports) == 0 {
+		hasToken = true
+		logger.Println(portNr)
+	} else {
+		portNr = ports[len(ports)-1] + 1
+		logger.Println(portNr)
+	}
+
+	f.Close()
 
 	// Starting the server
-	lis, err := net.Listen("tcp", selfAddress)
+	lis, err := net.Listen("tcp", "localhost:"+strconv.Itoa(portNr))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	n := &node{peerAddress: peerAddress, hasToken: true, wantsToPerform: false} // Node starts with the token
+	n := &node{portNr: portNr, nextPortNr: -1000, hasToken: hasToken, wantsToPerform: false} // Node starts with the token
 	pb.RegisterTokenRingServer(grpcServer, n)
 
 	go func() {
@@ -106,8 +121,16 @@ func main() {
 		}
 	}()
 
-	// Start a goroutine for sending messages when this node has the token
-	go n.sendMessage(context.Background(), selfAddress, peerAddress)
+	go func() {
+		for {
+			if n.hasToken {
+				// Start a goroutine for sending messages when this node has the token
+				n.dialNextInLine(context.Background())
+			}
+			// Wait for some time before trying to send the token again.
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
 
 	log.Printf("Node listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
@@ -116,4 +139,44 @@ func main() {
 
 }
 
-// token_ring.proto
+// Utility function to find the index of the node's port in the ports.txt file
+func findIndex(slice []int, target int) int {
+	for i, value := range slice {
+		if value == target {
+			return i
+		}
+	}
+	return -1
+}
+
+// Utility function that reads and returns all the port numbers in the ports.txt file
+func readPorts() []int {
+	f, err := os.Open("ports.txt")
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	scanner := bufio.NewScanner(f)
+	var ports []int
+	for scanner.Scan() {
+		port, err := strconv.Atoi(scanner.Text())
+		if err != nil {
+			log.Printf("error converting to integer: %v", err)
+			continue
+		}
+		ports = append(ports, port)
+	}
+	f.Close()
+	return ports
+}
+
+func printToLog(message string) {
+	f, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+
+	log.SetOutput(f)
+
+	log.Println(message)
+	f.Close()
+}
