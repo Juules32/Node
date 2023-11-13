@@ -29,14 +29,10 @@ func (n *node) PassToken(ctx context.Context, token *pb.Token) (*emptypb.Empty, 
 	defer n.mu.Unlock()
 
 	if n.wantsToPerform {
-		message := "Node with port number " + strconv.Itoa(n.portNr) + " performed action in critical section"
-
-		printToLog(message)
-
-		fmt.Println("Data written to file successfully!")
-
+		performActionInCriticalSection(n.portNr)
 		n.wantsToPerform = false
 	}
+
 	n.hasToken = true
 
 	return &emptypb.Empty{}, nil
@@ -44,13 +40,13 @@ func (n *node) PassToken(ctx context.Context, token *pb.Token) (*emptypb.Empty, 
 
 func (n *node) dialNextInLine(ctx context.Context) {
 	n.mu.Lock()
+	defer n.mu.Unlock()
 
 	//Find the peer address
 	ports := readPorts()
 
 	if len(ports) < 2 {
-		fmt.Println("All alone...")
-		n.mu.Unlock()
+		writeToLogAndTerminal("Node with port " + strconv.Itoa(n.portNr) + " is all alone...")
 		return
 	}
 
@@ -61,7 +57,6 @@ func (n *node) dialNextInLine(ctx context.Context) {
 		n.nextPortNr = ports[i+1]
 	}
 
-	// Perform actions as the client, sending the token to the peer.
 	conn, err := grpc.Dial("localhost:"+strconv.Itoa(n.nextPortNr), grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -75,10 +70,9 @@ func (n *node) dialNextInLine(ctx context.Context) {
 		log.Fatalf("could not pass token: %v", err)
 	}
 
-	fmt.Println("localhost:" + strconv.Itoa(n.portNr) + " passed the token to localhost:" + strconv.Itoa(n.nextPortNr))
-
 	n.hasToken = false
-	n.mu.Unlock()
+
+	writeToLogAndTerminal("Node with port " + strconv.Itoa(n.portNr) + " passed the token to Node with port " + strconv.Itoa(n.nextPortNr))
 
 }
 
@@ -114,6 +108,8 @@ func main() {
 	n := &node{portNr: portNr, nextPortNr: -1000, hasToken: hasToken, wantsToPerform: false} // Node starts with the token
 	pb.RegisterTokenRingServer(grpcServer, n)
 
+	writeToLogAndTerminal("Node with port " + strconv.Itoa(n.portNr) + " entered the server localhost")
+
 	go func() {
 		for {
 			n.wantsToPerform = true
@@ -128,7 +124,7 @@ func main() {
 				n.dialNextInLine(context.Background())
 			}
 			// Wait for some time before trying to send the token again.
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(2 * time.Second)
 		}
 	}()
 
@@ -136,7 +132,6 @@ func main() {
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
 }
 
 // Utility function to find the index of the node's port in the ports.txt file
@@ -169,14 +164,26 @@ func readPorts() []int {
 	return ports
 }
 
-func printToLog(message string) {
+func performActionInCriticalSection(portNr int) {
+
+	writeToLogAndTerminal("Node with port number " + strconv.Itoa(portNr) + " enters the critical section")
+
+	writeToLogAndTerminal("Node with port number " + strconv.Itoa(portNr) + " performs action in critical section")
+
+	writeToLogAndTerminal("Node with port number " + strconv.Itoa(portNr) + " leaves the critical section")
+
+}
+
+func writeToLogAndTerminal(message string) {
+	fmt.Println(message)
+
 	f, err := os.OpenFile("log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
-
 	log.SetOutput(f)
 
 	log.Println(message)
-	f.Close()
+
+	defer f.Close()
 }

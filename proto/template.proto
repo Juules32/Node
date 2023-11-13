@@ -11,7 +11,3 @@ service TokenRing {
 message Token {
   // No fields needed
 }
-
-message Ack {
-  bool success = 1;
-}

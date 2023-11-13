@@ -1,0 +1,37 @@
+2023/11/13 17:54:06 Node with port 50000 entered the server localhost
+2023/11/13 17:54:06 Node with port 50000 is all alone...
+2023/11/13 17:54:08 Node with port 50000 is all alone...
+2023/11/13 17:54:10 Node with port 50001 entered the server localhost
+2023/11/13 17:54:10 Node with port number 50001 enters the critical section
+2023/11/13 17:54:10 Node with port number 50001 performs action in critical section
+2023/11/13 17:54:10 Node with port number 50001 leaves the critical section
+2023/11/13 17:54:10 Node with port 50000 passed the token to Node with port 50001
+2023/11/13 17:54:12 Node with port number 50000 enters the critical section
+2023/11/13 17:54:12 Node with port number 50000 performs action in critical section
+2023/11/13 17:54:12 Node with port number 50000 leaves the critical section
+2023/11/13 17:54:12 Node with port 50001 passed the token to Node with port 50000
+2023/11/13 17:54:12 Node with port 50000 passed the token to Node with port 50001
+2023/11/13 17:54:14 Node with port 50001 passed the token to Node with port 50000
+2023/11/13 17:54:14 Node with port 50000 passed the token to Node with port 50001
+2023/11/13 17:54:16 Node with port 50001 passed the token to Node with port 50000
+2023/11/13 17:54:16 Node with port 50000 passed the token to Node with port 50001
+2023/11/13 17:54:17 Node with port 50002 entered the server localhost
+2023/11/13 17:54:18 Node with port number 50002 enters the critical section
+2023/11/13 17:54:18 Node with port number 50002 performs action in critical section
+2023/11/13 17:54:18 Node with port number 50002 leaves the critical section
+2023/11/13 17:54:18 Node with port 50001 passed the token to Node with port 50002
+2023/11/13 17:54:19 Node with port number 50000 enters the critical section
+2023/11/13 17:54:19 Node with port number 50000 performs action in critical section
+2023/11/13 17:54:19 Node with port number 50000 leaves the critical section
+2023/11/13 17:54:19 Node with port 50002 passed the token to Node with port 50000
+2023/11/13 17:54:20 Node with port number 50001 enters the critical section
+2023/11/13 17:54:20 Node with port number 50001 performs action in critical section
+2023/11/13 17:54:20 Node with port number 50001 leaves the critical section
+2023/11/13 17:54:20 Node with port 50000 passed the token to Node with port 50001
+2023/11/13 17:54:22 Node with port 50001 passed the token to Node with port 50002
+2023/11/13 17:54:23 Node with port 50002 passed the token to Node with port 50000
+2023/11/13 17:54:24 Node with port 50000 passed the token to Node with port 50001
+2023/11/13 17:54:26 Node with port 50001 passed the token to Node with port 50002
+2023/11/13 17:54:27 Node with port number 50000 enters the critical section
+2023/11/13 17:54:27 Node with port number 50000 performs action in critical section
+2023/11/13 17:54:27 Node with port number 50000 leaves the critical section
