@@ -65,15 +65,13 @@ func (n *node) dialNextInLine(ctx context.Context) {
 
 	c := pb.NewTokenRingClient(conn)
 
+	writeToLogAndTerminal("Node with port " + strconv.Itoa(n.portNr) + " passed the token to Node with port " + strconv.Itoa(n.nextPortNr))
 	_, err = c.PassToken(ctx, &pb.Token{})
 	if err != nil {
 		log.Fatalf("could not pass token: %v", err)
 	}
 
 	n.hasToken = false
-
-	writeToLogAndTerminal("Node with port " + strconv.Itoa(n.portNr) + " passed the token to Node with port " + strconv.Itoa(n.nextPortNr))
-
 }
 
 func main() {
